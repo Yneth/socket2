@@ -1,4 +1,7 @@
 #![allow(clippy::bool_assert_comparison)]
+
+#[cfg(all(unix, feature = "all"))]
+use std::{env, fs};
 #[cfg(all(
     feature = "all",
     any(
@@ -22,6 +25,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream};
 #[cfg(not(target_os = "redox"))]
 use std::net::{Ipv6Addr, SocketAddrV6};
 #[cfg(all(
+<<<<<<< HEAD
     feature = "all",
     any(
         target_os = "android",
@@ -32,6 +36,15 @@ use std::net::{Ipv6Addr, SocketAddrV6};
         target_os = "tvos",
         target_os = "watchos",
     )
+=======
+feature = "all",
+any(
+target_os = "android",
+target_os = "freebsd",
+target_os = "linux",
+target_vendor = "apple",
+)
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 ))]
 use std::num::NonZeroUsize;
 #[cfg(unix)]
@@ -43,14 +56,17 @@ use std::path::Path;
 use std::str;
 use std::thread;
 use std::time::Duration;
+<<<<<<< HEAD
 use std::{env, fs};
+=======
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 
 #[cfg(windows)]
 use windows_sys::Win32::Foundation::{GetHandleInformation, HANDLE_FLAG_INHERIT};
 
+use socket2::{Domain, Protocol, SockAddr, Socket, TcpKeepalive, Type};
 #[cfg(not(target_os = "redox"))]
 use socket2::MaybeUninitSlice;
-use socket2::{Domain, Protocol, SockAddr, Socket, TcpKeepalive, Type};
 
 #[test]
 fn domain_for_address() {
@@ -68,10 +84,14 @@ fn domain_fmt_debug() {
     let tests = &[
         (Domain::IPV4, "AF_INET"),
         (Domain::IPV6, "AF_INET6"),
+<<<<<<< HEAD
+=======
+            #[cfg(unix)]
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
         (Domain::UNIX, "AF_UNIX"),
-        #[cfg(all(feature = "all", any(target_os = "fuchsia", target_os = "linux")))]
+            #[cfg(all(feature = "all", any(target_os = "fuchsia", target_os = "linux")))]
         (Domain::PACKET, "AF_PACKET"),
-        #[cfg(all(feature = "all", any(target_os = "android", target_os = "linux")))]
+            #[cfg(all(feature = "all", any(target_os = "android", target_os = "linux")))]
         (Domain::VSOCK, "AF_VSOCK"),
         (0.into(), "AF_UNSPEC"),
         (500.into(), "500"),
@@ -91,9 +111,9 @@ fn type_fmt_debug() {
     let tests = &[
         (Type::STREAM, "SOCK_STREAM"),
         (Type::DGRAM, "SOCK_DGRAM"),
-        #[cfg(feature = "all")]
+            #[cfg(feature = "all")]
         (Type::SEQPACKET, "SOCK_SEQPACKET"),
-        #[cfg(all(feature = "all", not(target_os = "redox")))]
+            #[cfg(all(feature = "all", not(target_os = "redox")))]
         (Type::RAW, "SOCK_RAW"),
         (500.into(), "500"),
     ];
@@ -212,6 +232,16 @@ fn set_nonblocking() {
     assert_nonblocking(&socket, false);
 }
 
+#[test]
+fn sock_addr_correct_len() {
+    let socket_address = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8080);
+
+    let sock_addr: SockAddr = socket_address.into();
+
+    let struct_len = unsafe { (*sock_addr.as_ptr()).sa_len };
+    assert_eq!(sock_addr.len() as u8, struct_len);
+}
+
 fn assert_common_flags(socket: &Socket, expected: bool) {
     #[cfg(unix)]
     assert_close_on_exec(socket, expected);
@@ -257,16 +287,16 @@ fn no_common_flags() {
 }
 
 #[cfg(all(
-    feature = "all",
-    any(
-        target_os = "android",
-        target_os = "dragonfly",
-        target_os = "freebsd",
-        target_os = "fuchsia",
-        target_os = "linux",
-        target_os = "netbsd",
-        target_os = "openbsd"
-    )
+feature = "all",
+any(
+target_os = "android",
+target_os = "dragonfly",
+target_os = "freebsd",
+target_os = "fuchsia",
+target_os = "linux",
+target_os = "netbsd",
+target_os = "openbsd"
+)
 ))]
 #[test]
 fn type_nonblocking() {
@@ -278,6 +308,7 @@ fn type_nonblocking() {
 /// Assert that `NONBLOCK` is set on `socket`.
 #[cfg(unix)]
 #[track_caller]
+<<<<<<< HEAD
 pub fn assert_nonblocking(socket: &Socket, want: bool) {
     #[cfg(all(feature = "all", unix))]
     assert_eq!(socket.nonblocking().unwrap(), want, "non-blocking option");
@@ -286,6 +317,14 @@ pub fn assert_nonblocking(socket: &Socket, want: bool) {
         let flags = unsafe { libc::fcntl(socket.as_raw_fd(), libc::F_GETFL) };
         assert_eq!(flags & libc::O_NONBLOCK != 0, want, "non-blocking option");
     }
+=======
+pub fn assert_nonblocking<S>(socket: &S, want: bool)
+    where
+        S: AsRawFd,
+{
+    let flags = unsafe { libc::fcntl(socket.as_raw_fd(), libc::F_GETFL) };
+    assert_eq!(flags & libc::O_NONBLOCK != 0, want, "non-blocking option");
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 }
 
 #[cfg(windows)]
@@ -308,16 +347,16 @@ fn set_cloexec() {
 }
 
 #[cfg(all(
-    feature = "all",
-    any(
-        target_os = "android",
-        target_os = "dragonfly",
-        target_os = "freebsd",
-        target_os = "fuchsia",
-        target_os = "linux",
-        target_os = "netbsd",
-        target_os = "openbsd"
-    )
+feature = "all",
+any(
+target_os = "android",
+target_os = "dragonfly",
+target_os = "freebsd",
+target_os = "fuchsia",
+target_os = "linux",
+target_os = "netbsd",
+target_os = "openbsd"
+)
 ))]
 #[test]
 fn type_cloexec() {
@@ -330,8 +369,8 @@ fn type_cloexec() {
 #[cfg(unix)]
 #[track_caller]
 pub fn assert_close_on_exec<S>(socket: &S, want: bool)
-where
-    S: AsRawFd,
+    where
+        S: AsRawFd,
 {
     let flags = unsafe { libc::fcntl(socket.as_raw_fd(), libc::F_GETFD) };
     assert_eq!(flags & libc::FD_CLOEXEC != 0, want, "CLOEXEC option");
@@ -362,8 +401,8 @@ fn type_no_inherit() {
 #[cfg(windows)]
 #[track_caller]
 pub fn assert_flag_no_inherit<S>(socket: &S, want: bool)
-where
-    S: AsRawSocket,
+    where
+        S: AsRawSocket,
 {
     let mut flags = 0;
     if unsafe { GetHandleInformation(socket.as_raw_socket() as _, &mut flags) } == 0 {
@@ -407,8 +446,8 @@ fn set_nosigpipe() {
 ))]
 #[track_caller]
 pub fn assert_flag_no_sigpipe<S>(socket: &S, want: bool)
-where
-    S: AsRawFd,
+    where
+        S: AsRawFd,
 {
     use std::mem::size_of;
     let mut flags: libc::c_int = 0;
@@ -456,10 +495,17 @@ fn connect_timeout_unbound() {
     let socket = Socket::new(Domain::IPV4, Type::STREAM, None).unwrap();
     match socket.connect_timeout(&addr, Duration::from_millis(250)) {
         Ok(_) => panic!("unexpected success"),
+<<<<<<< HEAD
         Err(ref err)
             if err.kind() == io::ErrorKind::ConnectionRefused
                 || err.kind() == io::ErrorKind::TimedOut => {}
         Err(err) => panic!("unexpected error {}", err),
+=======
+        Err(ref e)
+        if e.kind() == io::ErrorKind::ConnectionRefused
+            || e.kind() == io::ErrorKind::TimedOut => {}
+        Err(e) => panic!("unexpected error {}", e),
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
     }
 }
 
@@ -793,6 +839,7 @@ fn tcp_keepalive() {
     let params = TcpKeepalive::new().with_time(Duration::from_secs(200));
 
     #[cfg(all(
+<<<<<<< HEAD
         feature = "all",
         any(
             target_os = "dragonfly",
@@ -806,10 +853,23 @@ fn tcp_keepalive() {
             target_os = "watchos",
             target_os = "windows",
         )
+=======
+    feature = "all",
+    any(
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "fuchsia",
+    target_os = "linux",
+    target_os = "netbsd",
+    target_vendor = "apple",
+    windows,
+    )
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
     ))]
-    let params = params.with_interval(Duration::from_secs(30));
+        let params = params.with_interval(Duration::from_secs(30));
 
     #[cfg(all(
+<<<<<<< HEAD
         feature = "all",
         any(
             target_os = "dragonfly",
@@ -822,19 +882,31 @@ fn tcp_keepalive() {
             target_os = "tvos",
             target_os = "watchos",
         )
+=======
+    feature = "all",
+    any(
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "fuchsia",
+    target_os = "linux",
+    target_os = "netbsd",
+    target_vendor = "apple",
+    )
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
     ))]
-    let params = params.with_retries(10);
+        let params = params.with_retries(10);
 
     // Set the parameters.
     socket.set_tcp_keepalive(&params).unwrap();
 
     #[cfg(all(
-        feature = "all",
-        not(any(windows, target_os = "haiku", target_os = "openbsd"))
+    feature = "all",
+    not(any(windows, target_os = "haiku", target_os = "openbsd"))
     ))]
     assert_eq!(socket.keepalive_time().unwrap(), Duration::from_secs(200));
 
     #[cfg(all(
+<<<<<<< HEAD
         feature = "all",
         any(
             target_os = "android",
@@ -849,6 +921,19 @@ fn tcp_keepalive() {
             target_os = "tvos",
             target_os = "watchos",
         )
+=======
+    feature = "all",
+    any(
+    target_os = "android",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "fuchsia",
+    target_os = "illumos",
+    target_os = "linux",
+    target_os = "netbsd",
+    target_vendor = "apple",
+    )
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
     ))]
     assert_eq!(
         socket.keepalive_interval().unwrap(),
@@ -856,6 +941,7 @@ fn tcp_keepalive() {
     );
 
     #[cfg(all(
+<<<<<<< HEAD
         feature = "all",
         any(
             target_os = "android",
@@ -870,6 +956,19 @@ fn tcp_keepalive() {
             target_os = "tvos",
             target_os = "watchos",
         )
+=======
+    feature = "all",
+    any(
+    target_os = "android",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "fuchsia",
+    target_os = "illumos",
+    target_os = "linux",
+    target_os = "netbsd",
+    target_vendor = "apple",
+    )
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
     ))]
     assert_eq!(socket.keepalive_retries().unwrap(), 10);
 }
@@ -954,6 +1053,7 @@ fn device() {
 }
 
 #[cfg(all(
+<<<<<<< HEAD
     feature = "all",
     any(
         target_os = "android",
@@ -964,6 +1064,15 @@ fn device() {
         target_os = "tvos",
         target_os = "watchos",
     )
+=======
+feature = "all",
+any(
+target_os = "android",
+target_os = "freebsd",
+target_os = "linux",
+target_vendor = "apple",
+)
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 ))]
 #[test]
 fn sendfile() {
@@ -1030,14 +1139,36 @@ fn sendfile() {
     }
 }
 
+<<<<<<< HEAD
+=======
+// TODO: use `Vec::spare_capacity_mut` once stable.
 #[cfg(all(
-    feature = "all",
-    any(
-        target_os = "android",
-        target_os = "freebsd",
-        target_os = "fuchsia",
-        target_os = "linux",
-    )
+feature = "all",
+any(
+target_os = "android",
+target_os = "freebsd",
+target_os = "linux",
+target_vendor = "apple",
+)
+))]
+fn spare_capacity_mut(buf: &mut Vec<u8>) -> &mut [MaybeUninit<u8>] {
+    unsafe {
+        std::slice::from_raw_parts_mut(
+            buf.as_mut_ptr().add(buf.len()) as *mut MaybeUninit<u8>,
+            buf.capacity() - buf.len(),
+        )
+    }
+}
+
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
+#[cfg(all(
+feature = "all",
+any(
+target_os = "android",
+target_os = "freebsd",
+target_os = "fuchsia",
+target_os = "linux",
+)
 ))]
 #[test]
 fn is_listener() {
@@ -1049,14 +1180,14 @@ fn is_listener() {
 }
 
 #[cfg(all(
-    feature = "all",
-    any(
-        target_os = "android",
-        // TODO: add FreeBSD.
-        // target_os = "freebsd",
-        target_os = "fuchsia",
-        target_os = "linux",
-    )
+feature = "all",
+any(
+target_os = "android",
+// TODO: add FreeBSD.
+// target_os = "freebsd",
+target_os = "fuchsia",
+target_os = "linux",
+)
 ))]
 #[test]
 fn domain() {
@@ -1071,13 +1202,13 @@ fn domain() {
 }
 
 #[cfg(all(
-    feature = "all",
-    any(
-        target_os = "android",
-        target_os = "freebsd",
-        target_os = "fuchsia",
-        target_os = "linux",
-    )
+feature = "all",
+any(
+target_os = "android",
+target_os = "freebsd",
+target_os = "fuchsia",
+target_os = "linux",
+)
 ))]
 #[test]
 fn protocol() {
@@ -1221,8 +1352,8 @@ test!(
 test!(out_of_band_inline, set_out_of_band_inline(true));
 test!(reuse_address, set_reuse_address(true));
 #[cfg(all(
-    feature = "all",
-    not(any(windows, target_os = "solaris", target_os = "illumos"))
+feature = "all",
+not(any(windows, target_os = "solaris", target_os = "illumos"))
 ))]
 test!(reuse_port, set_reuse_port(true));
 #[cfg(all(feature = "all", unix, not(target_os = "redox")))]
@@ -1244,18 +1375,18 @@ test!(
     set_mark(123)
 );
 #[cfg(all(
-    feature = "all",
-    any(target_os = "android", target_os = "fuchsia", target_os = "linux")
+feature = "all",
+any(target_os = "android", target_os = "fuchsia", target_os = "linux")
 ))]
 test!(cork, set_cork(true));
 #[cfg(all(
-    feature = "all",
-    any(target_os = "android", target_os = "fuchsia", target_os = "linux")
+feature = "all",
+any(target_os = "android", target_os = "fuchsia", target_os = "linux")
 ))]
 test!(quickack, set_quickack(false));
 #[cfg(all(
-    feature = "all",
-    any(target_os = "android", target_os = "fuchsia", target_os = "linux")
+feature = "all",
+any(target_os = "android", target_os = "fuchsia", target_os = "linux")
 ))]
 test!(thin_linear_timeouts, set_thin_linear_timeouts(true));
 test!(linger, set_linger(Some(Duration::from_secs(10))));
@@ -1272,10 +1403,17 @@ test!(IPv6 freebind_ipv6, set_freebind_ipv6(true));
 test!(IPv4 ttl, set_ttl(40));
 
 #[cfg(not(any(
+<<<<<<< HEAD
     target_os = "fuchsia",
     target_os = "redox",
     target_os = "solaris",
     target_os = "illumos",
+=======
+target_os = "fuschia",
+target_os = "redox",
+target_os = "solaris",
+target_os = "illumos",
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 )))]
 test!(IPv4 tos, set_tos(96));
 
@@ -1307,6 +1445,7 @@ test!(IPv6 only_v6, set_only_v6(true));
 test!(IPv6 only_v6, set_only_v6(false));
 
 #[cfg(all(
+<<<<<<< HEAD
     feature = "all",
     any(
         target_os = "android",
@@ -1336,6 +1475,10 @@ test!(IPv6 recv_tclass_v6, set_recv_tclass_v6(true));
 #[cfg(all(
     feature = "all",
     any(target_os = "android", target_os = "fuchsia", target_os = "linux")
+=======
+feature = "all",
+any(target_os = "android", target_os = "fuchsia", target_os = "linux")
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 ))]
 test!(
     tcp_user_timeout,
@@ -1344,12 +1487,20 @@ test!(
 
 #[test]
 #[cfg(not(any(
+<<<<<<< HEAD
     target_os = "haiku",
     target_os = "illumos",
     target_os = "netbsd",
     target_os = "openbsd",
     target_os = "redox",
     target_os = "solaris",
+=======
+target_os = "haiku",
+target_os = "illumos",
+target_os = "netbsd",
+target_os = "redox",
+target_os = "solaris",
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 )))]
 fn join_leave_multicast_v4_n() {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
@@ -1373,12 +1524,19 @@ fn join_leave_multicast_v4_n() {
 
 #[test]
 #[cfg(not(any(
+<<<<<<< HEAD
     target_os = "dragonfly",
     target_os = "haiku",
     target_os = "netbsd",
     target_os = "openbsd",
     target_os = "redox",
     target_os = "fuchsia",
+=======
+target_os = "haiku",
+target_os = "netbsd",
+target_os = "redox",
+target_os = "fuchsia",
+>>>>>>> bc8d7eb (fix sin_len for SockAddr)
 )))]
 fn join_leave_ssm_v4() {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
