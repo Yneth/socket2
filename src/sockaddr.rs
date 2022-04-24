@@ -221,7 +221,8 @@ impl From<SocketAddr> for SockAddr {
 
 impl From<SocketAddrV4> for SockAddr {
     fn from(addr: SocketAddrV4) -> SockAddr {
-        let sockaddr_in = sockaddr_in {
+        let len = mem::size_of::<sockaddr_in>() as socklen_t;
+        let mut sockaddr_in = sockaddr_in {
             sin_family: AF_INET as sa_family_t,
             sin_port: addr.port().to_be(),
             sin_addr: crate::sys::to_in_addr(addr.ip()),
@@ -235,14 +236,14 @@ impl From<SocketAddrV4> for SockAddr {
                 target_os = "netbsd",
                 target_os = "openbsd"
             ))]
-            sin_len: 0,
+            sin_len: len as u8,
         };
         let mut storage = MaybeUninit::<sockaddr_storage>::zeroed();
         // Safety: A `sockaddr_in` is memory compatible with a `sockaddr_storage`
         unsafe { (storage.as_mut_ptr() as *mut sockaddr_in).write(sockaddr_in) };
         SockAddr {
             storage: unsafe { storage.assume_init() },
-            len: mem::size_of::<sockaddr_in>() as socklen_t,
+            len,
         }
     }
 }
